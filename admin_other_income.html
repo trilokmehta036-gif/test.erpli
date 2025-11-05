@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Other Income - ERPLI</title>
+    
+    <!-- 1. We load Tailwind CSS from a CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 
+      START CSS
+      All CSS for this page is right here.
+    -->
+    <style>
+        /* Custom Global Styles (Light Theme) */
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F9FAFB; /* gray-50 */
+            color: #1F2937; /* gray-800 */
+        }
+
+        /* --- Page-Specific Styles --- */
+        .form-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* 12px */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem; /* 24px */
+        }
+        .form-label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #374151; }
+        .form-input, .form-select {
+            width: 100%;
+            border: 1px solid #D1D5DB; /* gray-300 */
+            border-radius: 0.5rem; /* 8px */
+            padding: 0.75rem 1rem; /* 12px 16px */
+            color: #111827; /* gray-900 */
+        }
+        .form-input:focus, .form-select:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 2px #BFDBFE; }
+        .form-submit-button { display: flex; justify-content: center; align-items: center; gap: 0.5rem; background-color: #3B82F6; color: #ffffff; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.2s ease; }
+        .form-submit-button:hover { background-color: #2563EB; }
+        .form-submit-button:disabled { background-color: #9CA3AF; cursor: not-allowed; }
+        .cancel-button { display: flex; justify-content: center; align-items: center; gap: 0.5rem; background-color: #E5E7EB; color: #374151; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.2s ease; }
+        .cancel-button:hover { background-color: #D1D5DB; }
+
+        /* --- Modal Styles --- */
+        #delete-modal { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.5); opacity: 0; transition: opacity 0.3s ease; }
+        #delete-modal.visible { opacity: 1; }
+        #delete-modal-content { background-color: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); max-width: 400px; width: 90%; transform: scale(0.95); transition: transform 0.3s ease; }
+        #delete-modal.visible #delete-modal-content { transform: scale(1); }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- 
+      START MAIN CONTENT
+      (No Sidebar)
+    -->
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- Page Header with Back Button -->
+        <div class="flex items-center gap-4 mb-6">
+            <a href="admin_reports.html" class="flex items-center justify-center p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </a>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Log Other Income</h1>
+        </div>
+
+        <!-- This is a grid layout: Form on the left, List on the right (on large screens) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Column 1: Log an Income Form -->
+            <div class="lg:col-span-1">
+                <div class="form-card">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Log New Income</h2>
+                    <form id="income-form" class="space-y-4">
+                        
+                        <div>
+                            <label for="income-name" class="form-label">Income Source</label>
+                            <input type="text" id="income-name" class="form-input" placeholder="e.g., Supplier Refund" required>
+                        </div>
+
+                        <div>
+                            <label for="income-category" class="form-label">Category</label>
+                            <select id="income-category" class="form-select" required>
+                                <option value="">Select a category...</option>
+                                <option value="Donation">Donation</option>
+                                <option value="Supplier Refund">Supplier Refund</option>
+                                <option value="Asset Sale">Asset Sale (e.g., sold old computer)</option>
+                                <option value="Interest Income">Interest Income</option>
+                                <option value="Miscellaneous">Miscellaneous</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="income-date" class="form-label">Date Received</label>
+                            <input type="date" id="income-date" class="form-input" required>
+                        </div>
+                        
+                        <div>
+                            <label for="income-amount" class="form-label">Amount</label>
+                            <input type="number" id="income-amount" class="form-input" placeholder="e.g., 5000" min="0" step="10" required>
+                        </div>
+                        
+                        <div>
+                            <label for="income-notes" class="form-label">Notes (Optional)</label>
+                            <input type="text" id="income-notes" class_name="form-input" placeholder="e.g., Refund for stationary order">
+                        </div>
+
+                        <button type="submit" id="save-income-button" class="form-submit-button w-full">
+                            <span>Save Income</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Column 2: List of Income Records -->
+            <div class="lg:col-span-2">
+                <div class="w-full overflow-x-auto bg-white rounded-lg shadow-md">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th scope="col" class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th scope="col" class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Received</th>
+                                <th scope="col" class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th scope="col" class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="income-list" class="bg-white divide-y divide-gray-200">
+                            <!-- JS will insert rows here -->
+                            <tr>
+                                <td colspan="5" class="py-4 px-4 text-center text-gray-500">Loading income...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    <!-- END PAGE-SPECIFIC CONTENT -->
+
+
+    <!-- 
+      START DELETE MODAL
+    -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Delete Income Record?</h3>
+            <p class="text-sm text-gray-500 mb-4">Are you sure you want to delete this income record? This action cannot be undone.</p>
+            <div class="flex justify-end gap-3">
+                <button id="cancel-delete-button" class="cancel-button">
+                    Cancel
+                </button>
+                <button id="confirm-delete-button" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- END DELETE MODAL -->
+
+
+    <!-- 
+      START JAVASCRIPT
+      All JavaScript for this page is right here.
+    -->
+    <script type="module">
+        // 1. Import the Supabase library
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // 2. Add your Supabase keys here
+        const SUPABASE_URL = 'https://mclizdhmmzckhjnocktz.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbGl6ZGhtbXpja2hqbm9ja3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyNDk5MzUsImV4cCI6MjA3NzgyNTkzNX0.zKvs2XDOvcJfb_mCDHOMsJwRKvUViWWTjZRcOKExAfI'
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        // We will store the user and profile globally on the page
+        let currentUser = null;
+        let userProfile = null;
+
+
+        // --- 3. THE SECURITY GUARD ---
+        async function checkAuth() {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = session.user;
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role, institute_id')
+                .eq('id', currentUser.id)
+                .single();
+            if (profileError) {
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+                return;
+            }
+            userProfile = profile;
+            if (profile.role !== 'admin') {
+                alert('You do not have permission to view this page.');
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+                return;
+            }
+            runPageLogic();
+        }
+
+        // --- 4. PAGE-SPECIFIC LOGIC (FOR INCOME) ---
+        
+        // Get all the elements we need
+        const incomeList = document.getElementById('income-list');
+        const incomeForm = document.getElementById('income-form');
+        const saveIncomeButton = document.getElementById('save-income-button');
+        const incomeDateInput = document.getElementById('income-date');
+        
+        // Modal elements
+        const deleteModal = document.getElementById('delete-modal');
+        const modalContent = deleteModal.querySelector('.modal-content');
+        const cancelDeleteButton = document.getElementById('cancel-delete-button');
+        const confirmDeleteButton = document.getElementById('confirm-delete-button');
+        
+        let itemToDeleteId = null; // Store which income record we are about to delete
+
+        // Function to fetch and display all income
+        async function fetchOtherIncome() {
+            incomeList.innerHTML = `<tr><td colspan="5" class="py-4 px-4 text-center text-gray-500">Loading income...</td></tr>`;
+            
+            const { data: incomes, error } = await supabase
+                .from('other_income') // Query the correct table
+                .select('*')
+                .eq('institute_id', userProfile.institute_id)
+                .order('date_received', { ascending: false }); // Show newest first
+
+            if (error) {
+                console.error('Error fetching income:', error);
+                incomeList.innerHTML = `<tr><td colspan="5" class="py-4 px-4 text-center text-red-500">Error loading income.</td></tr>`;
+                return;
+            }
+
+            if (incomes.length === 0) {
+                incomeList.innerHTML = `<tr><td colspan="5" class="py-4 px-4 text-center text-gray-500">You have not logged any other income yet.</td></tr>`;
+                return;
+            }
+
+            incomeList.innerHTML = ''; // Clear the list
+
+            for (const income of incomes) {
+                const row = document.createElement('tr');
+                
+                const amount = parseFloat(income.amount) || 0;
+
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-sm font-medium text-gray-900">${income.item_name}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${income.category}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${income.date_received}</td>
+                    <td class="py-3 px-4 text-sm font-medium text-green-600">$${amount.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-sm font-medium">
+                        <div class="flex gap-2">
+                            <button data-id="${income.id}" class="action-button text-red-600 hover:bg-red-100 delete-button">Delete</button>
+                        </div>
+                    </td>
+                `;
+                
+                // Add click listener for the new delete button
+                const deleteButton = row.querySelector('.delete-button');
+                deleteButton.addEventListener('click', () => {
+                    openDeleteModal(income.id);
+                });
+                
+                incomeList.appendChild(row);
+            }
+        }
+
+        // --- Form Submit Logic ---
+        incomeForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Stop page refresh
+            
+            const itemName = document.getElementById('income-name').value;
+            const category = document.getElementById('income-category').value;
+            const dateReceived = document.getElementById('income-date').value;
+            const amount = parseFloat(document.getElementById('income-amount').value) || 0;
+            const notes = document.getElementById('income-notes').value;
+
+            if (!itemName || !category || !dateReceived || amount <= 0) {
+                alert('Please fill out all required fields and enter a valid amount.');
+                return;
+            }
+
+            saveIncomeButton.textContent = 'Saving...';
+            saveIncomeButton.disabled = true;
+
+            const { error } = await supabase
+                .from('other_income') // Insert into the correct table
+                .insert({
+                    item_name: itemName,
+                    category: category,
+                    date_received: dateReceived,
+                    amount: amount,
+                    notes: notes,
+                    institute_id: userProfile.institute_id, // This is the security!
+                    admin_id: currentUser.id // Track who logged it
+                });
+
+            if (error) {
+                console.error('Error saving income:', error);
+                alert('Error: ' + error.message);
+            } else {
+                // Success!
+                incomeForm.reset(); // Clear the form
+                setDefaultDate(); // Reset the date
+                fetchOtherIncome(); // Refresh the list
+            }
+            
+            saveIncomeButton.textContent = 'Save Income';
+            saveIncomeButton.disabled = false;
+        });
+
+
+        // --- Delete Modal Logic ---
+        function openDeleteModal(id) {
+            itemToDeleteId = id; // Store the id
+            deleteModal.style.display = 'flex'; // Show modal
+            setTimeout(() => deleteModal.classList.add('visible'), 10);
+            setTimeout(() => modalContent.style.transform = 'scale(1)', 50);
+        }
+
+        function closeDeleteModal() {
+            modalContent.style.transform = 'scale(0.95)';
+            deleteModal.classList.remove('visible');
+            setTimeout(() => {
+                deleteModal.style.display = 'none';
+                itemToDeleteId = null;
+            }, 300);
+        }
+        
+        cancelDeleteButton.addEventListener('click', closeDeleteModal);
+
+        confirmDeleteButton.addEventListener('click', async () => {
+            if (!itemToDeleteId) return;
+
+            confirmDeleteButton.textContent = 'Deleting...';
+            confirmDeleteButton.disabled = true;
+
+            const { error } = await supabase
+                .from('other_income') // Delete from the correct table
+                .delete()
+                .eq('id', itemToDeleteId); // Delete the specific income record
+
+            if (error) {
+                console.error('Error deleting income:', error);
+                alert('Error: ' + error.message);
+            } else {
+                closeDeleteModal();
+                fetchOtherIncome(); // Refresh the list
+            }
+            
+            confirmDeleteButton.textContent = 'Delete';
+            confirmDeleteButton.disabled = false;
+        });
+        
+        // Helper function to set default date to today
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            incomeDateInput.value = today;
+        }
+
+        // This is the main entry point for the page
+        function runPageLogic() {
+            // This page has NO sidebar, so we don't call setupSidebarAndNav()
+            
+            // 1. Set default date
+            setDefaultDate();
+            
+            // 2. Fetch the data specific to this page
+            fetchOtherIncome(); // Fill the list
+        }
+
+        // --- 6. START THE APP ---
+        checkAuth(); // Run the security check first
+        
+    </script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - ERPLI</title>
+    
+    <!-- 1. We load Tailwind CSS from a CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. We load Chart.js so we are ready to build graphs here -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- 
+      START CSS
+      All CSS for this page is right here.
+    -->
+    <style>
+        /* Custom Global Styles (Light Theme) */
+        body { font-family: "Inter", sans-serif; background-color: #F9FAFB; color: #1F2937; }
+        #sidebar-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 40; transition: opacity 0.3s ease; }
+        #sidebar { width: 16rem; height: 100vh; position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; display: flex; flex-direction: column; background-color: #ffffff; border-right: 1px solid #E5E7EB; transform: translateX(-100%); transition: transform 0.3s ease, width 0.3s ease; }
+        #main-content-wrapper { width: 100%; padding-top: 4rem; transition: margin-left 0.3s ease; }
+        #mobile-header { position: sticky; top: 0; height: 4rem; background-color: #ffffff; border-bottom: 1px solid #E5E7EB; z-index: 30; }
+        @media (min-width: 768px) {
+            #sidebar { transform: translateX(0); }
+            #mobile-header { display: none; }
+            #main-content-wrapper { margin-left: 16rem; width: calc(100% - 16rem); padding-top: 0; }
+        }
+        body.sidebar-retracted #sidebar { width: 5rem; }
+        @media (min-width: 768px) {
+            body.sidebar-retracted #main-content-wrapper { margin-left: 5rem; width: calc(100% - 5rem); }
+        }
+        body.sidebar-retracted .sidebar-text { display: none; }
+        body.sidebar-retracted .nav-link, body.sidebar-retracted #logout-button { justify-content: center; gap: 0; }
+        body.sidebar-retracted #sidebar-toggle-button svg { transform: rotate(180deg); }
+        body.sidebar-mobile-open #sidebar { transform: translateX(0); }
+        body.sidebar-mobile-open #sidebar-overlay { display: block; opacity: 1; }
+        body.sidebar-mobile-open #main-content-wrapper { display: none; }
+        .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 500; color: #4B5563; transition: all 0.2s ease; white-space: nowrap; overflow: hidden; }
+        .nav-link:hover { background-color: #F3F4F6; color: #111827; }
+        .nav-link.active { background-color: #3B82F6; color: #ffffff; }
+        .nav-link.active .nav-icon { color: #ffffff; }
+
+        /* --- Page-Specific Styles --- */
+        .report-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+        }
+        .stat-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+        }
+        .stat-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6B7280; /* gray-500 */
+        }
+        .stat-value {
+            font-size: 2.25rem; /* 36px */
+            font-weight: 700;
+            color: #111827; /* gray-900 */
+        }
+        .stat-value.positive {
+            color: #16A34A; /* green-600 */
+        }
+        .stat-value.negative {
+            color: #DC2626; /* red-600 */
+        }
+    </style>
+</head>
+<body class="page-container">
+
+    <!-- 
+      START SIDEBAR HTML
+      (This is the correct 6-link sidebar)
+    -->
+    <aside id="sidebar">
+        <!-- Sidebar content -->
+        <div class="flex h-full flex-col overflow-y-auto">
+            <!-- Sidebar Header -->
+            <div class="flex h-16 items-center justify-between border-b border-gray-200 px-4 flex-shrink-0">
+                <span class="sidebar-text text-xl font-bold text-gray-900">ERPLI</span>
+                <button id="sidebar-toggle-button" class="hidden md:block p-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav id="sidebar-nav" class="flex-1 space-y-2 p-4">
+                <a href="admin_dashboard.html" data-page="admin_dashboard" class="nav-link">
+                    <svg class="h-6 w-6 nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4h.01M12 12h.01M15 12h.01M9 12h.01M12 15h.01M15 15h.01M9 15h.01" /></svg>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+                <a href="admin_courses.html" data-page="admin_courses" class="nav-link">
+                    <svg class="h-6 w-6 nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253" /></svg>
+                    <span class="sidebar-text">Courses</span>
+                </a>
+                <a href="admin_batches.html" data-page="admin_batches" class="nav-link">
+                    <svg class="h-6 w-6 nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span class="sidebar-text">Batches</span>
+                </a>
+                <a href="admin_students.html" data-page="admin_students" class="nav-link">
+                    <svg class="h-6 w-6 nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <span class="sidebar-text">Students</span>
+                </a>
+                <a href="admin_teachers.html" data-page="admin_teachers" class="nav-link">
+                    <svg class="h-6 w-6 nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    <span class="sidebar-text">Teachers</span>
+                </a>
+                <a href="admin_reports.html" data-page="admin_reports" class="nav-link">
+                    <svg class="h-6 w-6 nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                    <span class="sidebar-text">Reports</span>
+                </a>
+            </nav>
+            
+            <!-- Logout Footer -->
+            <div class="border-t border-gray-200 p-4 flex-shrink-0">
+                <div id="user-info" class="mb-2 overflow-hidden">
+                    <span class="sidebar-text block text-sm font-medium text-gray-700 truncate" id="user-email-sidebar">Loading...</span>
+                    <span class="sidebar-text block text-xs text-gray-500" id="user-role-sidebar">Admin</span>
+                </div>
+                <button id="logout-button" class="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+    <!-- END SIDEBAR HTML -->
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay"></div>
+    
+    
+    <!-- 
+      START MAIN CONTENT WRAPPER
+    -->
+    <div id="main-content-wrapper">
+        
+        <!-- Mobile-Only Header -->
+        <header id="mobile-header" class="md:hidden flex items-center justify-between px-4">
+            <span class="text-xl font-bold text-gray-900">ERPLI</span>
+            <button id="mobile-menu-button" class="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100">
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+        </header>
+
+        <!-- 
+          START PAGE-SPECIFIC CONTENT
+        -->
+        <main class="p-4 md:p-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Reports</h1>
+                
+                <!-- "Quick Actions" Buttons, as you asked -->
+                <div class="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
+                    <a href="admin_payroll.html" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        <span>Log Teacher Payroll</span>
+                    </a>
+                    <a href="admin_expenses.html" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span>Log Other Expense</span>
+                    </a>
+                    <a href="admin_other_income.html" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2-1.343-2-3-2zM3 14s.895 3 2 3h14s1.105-3 2-3V8c-1.105 0-2-.895-2-2H5c0 1.105-.895 2-2 2v6z" /></svg>
+                        <span>Log Other Income</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- 
+              NEW STAT CARDS
+              These will show real data.
+            -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="stat-card">
+                    <span class="stat-title">Total Income (This Month)</span>
+                    <h3 id="stat-income" class="stat-value positive">0.00</h3>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Total Expenses (This Month)</span>
+                    <h3 id="stat-expenses" class="stat-value negative">0.00</h3>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-title">Net Profit (This Month)</span>
+                    <h3 id="stat-profit" class="stat-value">0.00</h3>
+                </div>
+            </div>
+
+            <!-- This is where we will put the graph. -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Card 1: Revenue Graph (REMOVED the other two cards) -->
+                <div class="report-card col-span-1 lg:col-span-2">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Income vs. Expenses (Last 6 Months)</h2>
+                    <p class="text-gray-500 mb-4 text-sm">
+                        This graph shows your total expenses (Payroll + Other Expenses) vs. your total income (Student Fees + Other Income).
+                        <br>
+                        <strong class="text-blue-600">Note:</strong> "Student Fees" are not yet included.
+                    </p>
+                    <div class="h-80 relative">
+                        <!-- THIS IS THE NEW CANVAS for the graph -->
+                        <canvas id="finance-chart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+            
+        </main>
+        <!-- END PAGE-SPECIFIC CONTENT -->
+    
+    </div>
+    <!-- END MAIN CONTENT WRAPPER -->
+
+
+    <!-- 
+      START JAVASCRIPT
+      All JavaScript for this page is right here.
+    -->
+    <script type="module">
+        // 1. Import the Supabase library
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // 2. Add your Supabase keys here
+        const SUPABASE_URL = 'https://mclizdhmmzckhjnocktz.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbGl6ZGhtbXpja2hqbm9ja3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyNDk5MzUsImV4cCI6MjA3NzgyNTkzNX0.zKvs2XDOvcJfb_mCDHOMsJwRKvUViWWTjZRcOKExAfI'
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        // We will store the user and profile globally on the page
+        let currentUser = null;
+        let userProfile = null;
+
+
+        // --- 3. THE SECURITY GUARD ---
+        async function checkAuth() {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = session.user;
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role, institute_id')
+                .eq('id', currentUser.id)
+                .single();
+            if (profileError) {
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+                return;
+            }
+            userProfile = profile;
+            if (profile.role !== 'admin') {
+                alert('You do not have permission to view this page.');
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+                return;
+            }
+            runPageLogic();
+        }
+
+        // --- 4. SIDEBAR & NAVIGATION LOGIC ---
+        function setupSidebarAndNav() {
+            const logoutButton = document.getElementById('logout-button');
+            const userEmailSpan = document.getElementById('user-email-sidebar');
+            const desktopToggleButton = document.getElementById('sidebar-toggle-button');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
+            logoutButton.addEventListener('click', async () => {
+                await supabase.auth.signOut();
+                window.location.href = 'login.html';
+            });
+
+            if (currentUser) {
+                userEmailSpan.textContent = currentUser.email;
+            }
+
+            // --- THIS IS THE ONLY LINE TO CHANGE ---
+            const currentPage = "admin_reports";
+            // ------------------------------------
+            
+            const navLinks = document.querySelectorAll("#sidebar-nav a");
+            navLinks.forEach(link => {
+                if (link.getAttribute("data-page") === currentPage) {
+                    link.classList.add("active");
+                }
+            });
+
+            desktopToggleButton.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-retracted');
+            });
+            mobileMenuButton.addEventListener('click', () => {
+                document.body.classList.add('sidebar-mobile-open');
+            });
+            sidebarOverlay.addEventListener('click', () => {
+                document.body.classList.remove('sidebar-mobile-open');
+            });
+        }
+        
+        // --- 5. PAGE-SPECIFIC LOGIC (FOR REPORTS) ---
+        
+        // --- NEW: Helper to format to $
+        function formatCurrency(value) {
+            return `$${(value || 0).toFixed(2)}`;
+        }
+
+        // --- NEW: Helper to get month key "YYYY-MM" ---
+        function getMonthKey(date) {
+            return date.toISOString().substring(0, 7); // "2025-11"
+        }
+
+        // --- NEW: Function to build the report ---
+        async function buildReport() {
+            const statIncome = document.getElementById('stat-income');
+            const statExpenses = document.getElementById('stat-expenses');
+            const statProfit = document.getElementById('stat-profit');
+
+            // --- 1. Fetch ALL data ---
+            // We fetch payroll, other expenses, and other income
+            const [payrollData, expensesData, incomeData] = await Promise.all([
+                supabase.from('payroll').select('base_salary, bonus, deduction, date_paid').eq('institute_id', userProfile.institute_id),
+                supabase.from('expenses').select('amount, date_paid').eq('institute_id', userProfile.institute_id),
+                supabase.from('other_income').select('amount, date_received').eq('institute_id', userProfile.institute_id)
+                // We will also add 'fees' data here when we build that page
+            ]);
+            
+            // Check for errors
+            if (payrollData.error || expensesData.error || incomeData.error) {
+                console.error("Error fetching report data");
+                // You can show an error on the page here
+                return;
+            }
+
+            // --- 2. Process Data ---
+            const months = {}; // e.g., { "2025-10": { income: 500, expense: 3000 } }
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const today = new Date();
+            const currentMonthKey = getMonthKey(today); // "2025-11"
+
+            // Initialize the last 6 months
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const monthKey = getMonthKey(d); // "2025-11"
+                const monthLabel = `${monthNames[d.getMonth()]} ${d.getFullYear()}`; // "Nov 2025"
+                months[monthKey] = { label: monthLabel, income: 0, expense: 0 };
+            }
+
+            // Process all income
+            (incomeData.data || []).forEach(item => {
+                const monthKey = item.date_received.substring(0, 7);
+                if (months[monthKey]) {
+                    months[monthKey].income += parseFloat(item.amount) || 0;
+                }
+            });
+            // We will add student fees to 'months[monthKey].income' here later
+
+            // Process payroll expenses
+            (payrollData.data || []).forEach(item => {
+                const monthKey = item.date_paid.substring(0, 7);
+                if (months[monthKey]) {
+                    const totalPaid = (parseFloat(item.base_salary) || 0) + (parseFloat(item.bonus) || 0) - (parseFloat(item.deduction) || 0);
+                    months[monthKey].expense += totalPaid;
+                }
+            });
+            
+            // Process other expenses
+            (expensesData.data || []).forEach(item => {
+                const monthKey = item.date_paid.substring(0, 7);
+                if (months[monthKey]) {
+                    months[monthKey].expense += parseFloat(item.amount) || 0;
+                }
+            });
+
+            // --- 3. Update Stat Cards (for This Month) ---
+            const thisMonthData = months[currentMonthKey];
+            if (thisMonthData) {
+                const profit = thisMonthData.income - thisMonthData.expense;
+                
+                statIncome.textContent = formatCurrency(thisMonthData.income);
+                statExpenses.textContent = formatCurrency(thisMonthData.expense);
+                statProfit.textContent = formatCurrency(profit);
+                
+                // Add color for profit/loss
+                statProfit.classList.remove('positive', 'negative');
+                if (profit > 0) {
+                    statProfit.classList.add('positive');
+                } else if (profit < 0) {
+                    statProfit.classList.add('negative');
+                }
+            }
+
+
+            // --- 4. Prepare data for Chart.js ---
+            const labels = Object.values(months).map(m => m.label);
+            const incomeSeries = Object.values(months).map(m => m.income);
+            const expenseSeries = Object.values(months).map(m => m.expense);
+
+            // --- 5. Render the Chart ---
+            const ctx = document.getElementById('finance-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Total Income',
+                            data: incomeSeries,
+                            borderColor: '#16A34A', // green-600
+                            backgroundColor: '#16A34A',
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Total Expenses',
+                            data: expenseSeries,
+                            borderColor: '#DC2626', // red-600
+                            backgroundColor: '#DC2626',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                // Format Y-axis labels as $
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function runPageLogic() {
+            // 1. Set up all the sidebar buttons and auth info
+            setupSidebarAndNav();
+            
+            // 2. Build the report
+            buildReport();
+        }
+
+        // --- 6. START THE APP ---
+        checkAuth(); // Run the security check first
+        
+    </script>
+</body>
+</html>
+
